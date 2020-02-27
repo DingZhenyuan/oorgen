@@ -1,3 +1,3 @@
 # oorgen
 
-An object-oriented random program generator.
+An object-oriented random program generator (OORGen).
