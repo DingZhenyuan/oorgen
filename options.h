@@ -10,7 +10,9 @@ namespace oorgen {
         
         // 支持的C++语言的标准的ID
         enum StandardID {
-            C99, C11
+            C99, C11, MAX_CStandardID,
+            CXX98, CXX03, CXX11, CXX14, CXX17, MAX_CXXStandardID,
+            OpenCL_1_0, OpenCL_1_1, OpenCL_1_2, OpenCL_2_0, OpenCL_2_1, OpenCL_2_2, MAX_OpenCLStandardID
         };
 
         // map 讲标准的ID对应到字符串文本
