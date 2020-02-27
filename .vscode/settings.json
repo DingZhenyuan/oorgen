@@ -2,6 +2,7 @@
     "files.associations": {
         "functional": "cpp",
         "cstdint": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "map": "cpp"
     }
 }

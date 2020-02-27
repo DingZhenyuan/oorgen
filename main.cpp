@@ -8,5 +8,5 @@
 
 #include "options.h"
 
-// using namespace oorgen;
+using namespace oorgen;
 
