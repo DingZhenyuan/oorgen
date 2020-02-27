@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "options.h"
+#include "type.h"
 
 using namespace oorgen;
 
