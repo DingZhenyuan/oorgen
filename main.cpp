@@ -6,6 +6,7 @@
 #include <functional>
 #include <sstream>
 
+#include "options.h"
 
 // using namespace oorgen;
 
