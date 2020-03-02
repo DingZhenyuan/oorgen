@@ -77,6 +77,25 @@ class Type {
         void set_align (uint32_t _align) { align = _align; }
         uint32_t get_align () { return align; }
 
+        // 我们假定静态存储周期、CV限定符和字节对齐共同构成了Type的全名
+        // 获取Type全名
+        std::string get_name ();
+        std::string get_simple_name () { return name; }
+        virtual std::string get_type_suffix() { return ""; }
+
+        // 帮助快速确定Type种类的函数
+        virtual bool is_builtin_type() { return false; }
+        virtual bool is_int_type() { return false; }
+        virtual bool is_struct_type() { return false; }
+        virtual bool is_array_type() { return false; }
+        virtual bool is_ptr_type() { return false; }
+
+        // 纯虚函数，debug用
+        virtual void dbg_dump() = 0;
+
+        // 析构函数
+        virtual ~Type () {}
+
     protected:
         std::string name;
         CV_Qual cv_qual;
@@ -86,5 +105,8 @@ class Type {
     private:
         TypeID id;
 };
+
+
+
 
 }
