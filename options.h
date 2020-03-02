@@ -4,7 +4,7 @@
 #include <string>
 
 namespace oorgen {
-    struct Options {
+struct Options {
         // 版本
         std::string oorgen_version = "0.0";
         std::string plane_oorgen_version;
@@ -36,5 +36,5 @@ namespace oorgen {
         bool include_array;
     };
     
-    extern Options *options;
+extern Options *options;
 }
