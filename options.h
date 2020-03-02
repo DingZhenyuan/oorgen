@@ -5,6 +5,7 @@
 
 namespace oorgen {
     struct Options {
+        // 版本
         std::string oorgen_version = "0.0";
         std::string plane_oorgen_version;
         
@@ -19,17 +20,21 @@ namespace oorgen {
         static const std::map<std::string, StandardID> str_to_standard;
 
         Options();
+        
+        // 版本判断
         bool is_c();
         bool is_cxx();
         bool is_opencl();
 
         StandardID standard_id;
+        // 是否时64bit形式
         bool mode_64bit;
 
+        // 是否包括以下结构
         bool include_valarray;
         bool include_vector;
         bool include_array;
     };
-
+    
     extern Options *options;
 }
