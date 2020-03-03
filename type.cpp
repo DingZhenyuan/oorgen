@@ -2,9 +2,10 @@
 #include <sstream>
 
 #include "options.h"
+#include "sym_table.h"
 #include "type.h"
-#include "variable.h"
 #include "util.h"
+#include "variable.h"
 
 using namespace oorgen;
 

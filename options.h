@@ -4,6 +4,7 @@
 #include <string>
 
 namespace oorgen {
+    
 struct Options {
         // 版本
         std::string oorgen_version = "0.0";
