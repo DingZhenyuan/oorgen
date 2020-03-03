@@ -1846,3 +1846,232 @@ static std::string dbg_dump_helper (std::string name, int id, T min, T max, uint
     ret += "is_signed: " + std::to_string(is_signed) + "\n";
     return ret;
 }
+
+void TypeBOOL::dbg_dump () {
+    std::cout << dbg_dump_helper<bool>(get_name(), get_int_type_id(), min.val.bool_val, max.val.bool_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeCHAR::dbg_dump () {
+    std::cout << dbg_dump_helper<char>(get_name(), get_int_type_id(), min.val.char_val, max.val.char_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeUCHAR::dbg_dump () {
+    std::cout << dbg_dump_helper<unsigned char>(get_name(), get_int_type_id(), min.val.uchar_val, max.val.uchar_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeSHRT::dbg_dump () {
+    std::cout << dbg_dump_helper<short>(get_name(), get_int_type_id(), min.val.shrt_val, max.val.shrt_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeUSHRT::dbg_dump () {
+    std::cout << dbg_dump_helper<unsigned short>(get_name(), get_int_type_id(), min.val.ushrt_val, max.val.ushrt_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeINT::dbg_dump () {
+    std::cout << dbg_dump_helper<int>(get_name(), get_int_type_id(), min.val.int_val, max.val.int_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeUINT::dbg_dump () {
+    std::cout << dbg_dump_helper<unsigned int>(get_name(), get_int_type_id(), min.val.uint_val, max.val.uint_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeLINT::dbg_dump () {
+    if (options->mode_64bit)
+        std::cout << dbg_dump_helper<long long int>(get_name(), get_int_type_id(), min.val.lint64_val, max.val.lint64_val, bit_size, is_signed) << std::endl;
+    else
+        std::cout << dbg_dump_helper<int>(get_name(), get_int_type_id(), min.val.lint32_val, max.val.lint32_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeULINT::dbg_dump () {
+    if (options->mode_64bit)
+        std::cout << dbg_dump_helper<unsigned long long int>(get_name(), get_int_type_id(), min.val.ulint64_val, max.val.ulint64_val, bit_size, is_signed) << std::endl;
+    else
+        std::cout << dbg_dump_helper<unsigned int>(get_name(), get_int_type_id(), min.val.ulint32_val, max.val.ulint32_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeLLINT::dbg_dump () {
+    std::cout << dbg_dump_helper<long long int>(get_name(), get_int_type_id(), min.val.llint_val, max.val.llint_val, bit_size, is_signed) << std::endl;
+}
+
+void TypeULLINT::dbg_dump () {
+    std::cout << dbg_dump_helper<unsigned long long int>(get_name(), get_int_type_id(), min.val.ullint_val, max.val.ullint_val, bit_size, is_signed) << std::endl;
+}
+
+std::shared_ptr<BitField> BitField::generate (std::shared_ptr<Context> ctx, bool is_unnamed) {
+    Type::CV_Qual cv_qual = rand_val_gen->get_rand_elem(ctx->get_gen_policy()->get_allowed_cv_qual());
+
+    IntegerType::IntegerTypeID int_type_id = MAX_INT_ID;
+    if (options->is_cxx())
+        int_type_id = rand_val_gen->get_rand_id(ctx->get_gen_policy()->get_allowed_int_types());
+    // In C without "J.5.8 Extended bit-field types" bit-filed can have only signed/unsigned int type
+    if (options->is_c()) {
+        auto search_allowed_bit_filed_type = [] (Probability<IntegerType::IntegerTypeID> prob) {
+            return prob.get_id() == IntegerType::IntegerTypeID::INT ||
+                   prob.get_id() == IntegerType::IntegerTypeID::UINT;
+        };
+        auto search_res = std::find_if(ctx->get_gen_policy()->get_allowed_int_types().begin(),
+                                       ctx->get_gen_policy()->get_allowed_int_types().end(),
+                                       search_allowed_bit_filed_type);
+        assert(search_res != ctx->get_gen_policy()->get_allowed_int_types().end() &&
+               "In C without \"J.5.8 Extended bit-field types\" bit-filed can have only signed/unsigned int type");
+        int_type_id = search_res->get_id();
+    }
+    std::shared_ptr<IntegerType> tmp_int_type = IntegerType::init(int_type_id);
+
+    uint32_t min_bit_size = is_unnamed ? 0 : (std::min(tmp_int_type->get_bit_size(), ctx->get_gen_policy()->get_min_bit_field_size()));
+
+    //TODO: it cause different result for LLVM and GCC, so we limit max_bit_size to int bitsize. See pr70733
+//    uint32_t max_bit_size = tmp_int_type->get_bit_size() * ctx->get_gen_policy()->get_max_bit_field_size();
+    std::shared_ptr<IntegerType> int_type = IntegerType::init(Type::IntegerTypeID::INT);
+    uint32_t max_bit_size = int_type->get_bit_size();
+
+    // C doesn't allows bit-fields bigger than its base type + pr70733
+    if(options->is_c())
+        max_bit_size = std::min(tmp_int_type->get_bit_size(), int_type->get_bit_size());
+
+    uint32_t bit_size = rand_val_gen->get_rand_value(min_bit_size, max_bit_size);
+    return std::make_shared<BitField>(int_type_id, bit_size, cv_qual);
+}
+
+bool BitField::can_fit_in_int (BuiltinType::ScalarTypedVal val, bool is_unsigned) {
+    std::shared_ptr<IntegerType> tmp_type = IntegerType::init(is_unsigned ? Type::IntegerTypeID::UINT : Type::IntegerTypeID::INT);
+    bool val_is_unsig = false;
+    int64_t s_val = 0;
+    uint64_t u_val = 0;
+
+    switch (val.get_int_type_id()) {
+        case IntegerType::IntegerTypeID::BOOL:
+        case IntegerType::IntegerTypeID::CHAR:
+        case IntegerType::IntegerTypeID::UCHAR:
+        case IntegerType::IntegerTypeID::SHRT:
+        case IntegerType::IntegerTypeID::USHRT:
+        case IntegerType::IntegerTypeID::INT:
+            return true;
+            break;
+        case IntegerType::IntegerTypeID::UINT:
+            val_is_unsig = true;
+            u_val = val.val.uint_val;
+            break;
+        case IntegerType::IntegerTypeID::LINT:
+            val_is_unsig = false;
+            if (options->mode_64bit)
+                s_val = val.val.lint64_val;
+            else
+                s_val = val.val.lint32_val;
+            break;
+        case IntegerType::IntegerTypeID::ULINT:
+            val_is_unsig = true;
+            if (options->mode_64bit)
+                u_val = val.val.ulint64_val;
+            else
+                u_val = val.val.ulint32_val;
+            break;
+        case IntegerType::IntegerTypeID::LLINT:
+            val_is_unsig = false;
+            s_val = val.val.llint_val;
+            break;
+        case IntegerType::IntegerTypeID::ULLINT:
+            val_is_unsig = true;
+            u_val = val.val.ullint_val;
+            break;
+        case IntegerType::IntegerTypeID::MAX_INT_ID:
+            ERROR("unsupported int type (BitField)");
+    }
+
+    int64_t s_min = 0;
+    uint64_t u_min = 0;
+    int64_t s_max = 0;
+    uint64_t u_max = 0;
+
+    if (is_unsigned) {
+        u_min = tmp_type->get_min().val.uint_val;
+        u_max = tmp_type->get_max().val.uint_val;
+    }
+    else {
+        s_min = tmp_type->get_min().val.int_val;
+        s_max = tmp_type->get_max().val.int_val;
+    }
+
+    if (val_is_unsig) {
+        if (is_unsigned)
+            return (u_min <= u_val) && (u_val <= u_max);
+        else
+            return (u_val <= (uint64_t)s_max);
+    }
+    else {
+        if (is_unsigned)
+            return ((int64_t)u_min <= s_val) && ((uint64_t)s_val <= u_max);
+        else
+            return (s_min <= s_val) && (s_val <= s_max);
+    }
+}
+
+void BitField::dbg_dump () {
+    std::string ret = "";
+    ret += "name: " + name + "\n";
+    ret += "int_type_id: " + std::to_string(get_int_type_id()) + "\n";
+    switch (get_int_type_id()) {
+        case BuiltinType::IntegerTypeID::BOOL:
+            ret += "min: " + std::to_string(min.val.bool_val) + "\n";
+            ret += "max: " + std::to_string(max.val.bool_val) + "\n";
+            break;
+        case BuiltinType::IntegerTypeID::CHAR:
+            ret += "min: " + std::to_string(min.val.char_val) + "\n";
+            ret += "max: " + std::to_string(max.val.char_val) + "\n";
+            break;
+        case BuiltinType::IntegerTypeID::UCHAR:
+            ret += "min: " + std::to_string(min.val.uchar_val) + "\n";
+            ret += "max: " + std::to_string(max.val.uchar_val) + "\n";
+            break;
+        case BuiltinType::IntegerTypeID::SHRT:
+            ret += "min: " + std::to_string(min.val.shrt_val) + "\n";
+            ret += "max: " + std::to_string(max.val.shrt_val) + "\n";
+            break;
+        case BuiltinType::IntegerTypeID::USHRT:
+            ret += "min: " + std::to_string(min.val.ushrt_val) + "\n";
+            ret += "max: " + std::to_string(max.val.ushrt_val) + "\n";
+            break;
+        case BuiltinType::IntegerTypeID::INT:
+            ret += "min: " + std::to_string(min.val.int_val) + "\n";
+            ret += "max: " + std::to_string(max.val.int_val) + "\n";
+            break;
+        case BuiltinType::IntegerTypeID::UINT:
+            ret += "min: " + std::to_string(min.val.uint_val) + "\n";
+            ret += "max: " + std::to_string(max.val.uint_val) + "\n";
+            break;
+        case BuiltinType::IntegerTypeID::LINT:
+            if (options->mode_64bit) {
+                ret += "min: " + std::to_string(min.val.lint64_val) + "\n";
+                ret += "max: " + std::to_string(max.val.lint64_val) + "\n";
+            }
+            else {
+                ret += "min: " + std::to_string(min.val.lint32_val) + "\n";
+                ret += "max: " + std::to_string(max.val.lint32_val) + "\n";
+            }
+            break;
+        case BuiltinType::IntegerTypeID::ULINT:
+            if (options->mode_64bit) {
+                ret += "min: " + std::to_string(min.val.ulint64_val) + "\n";
+                ret += "max: " + std::to_string(max.val.ulint64_val) + "\n";
+            }
+            else {
+                ret += "min: " + std::to_string(min.val.ulint32_val) + "\n";
+                ret += "max: " + std::to_string(max.val.ulint32_val) + "\n";
+            }
+            break;
+         case BuiltinType::IntegerTypeID::LLINT:
+            ret += "min: " + std::to_string(min.val.llint_val) + "\n";
+            ret += "max: " + std::to_string(max.val.llint_val) + "\n";
+            break;
+         case BuiltinType::IntegerTypeID::ULLINT:
+            ret += "min: " + std::to_string(min.val.ullint_val) + "\n";
+            ret += "max: " + std::to_string(max.val.ullint_val) + "\n";
+            break;
+        case MAX_INT_ID:
+            ERROR("unsupported int type (BitField)");
+            break;
+    }
+    ret += "bit_size: " + std::to_string(bit_size) + "\n";
+    ret += "is_signed: " + std::to_string(is_signed) + "\n";
+    std::cout << ret;
+}
