@@ -8,6 +8,7 @@
 
 #include "options.h"
 #include "type.h"
+#include "variable.h"
 
 using namespace oorgen;
 

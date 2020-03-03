@@ -4,6 +4,7 @@
 #include "options.h"
 #include "type.h"
 #include "variable.h"
+#include "util.h"
 
 using namespace oorgen;
 
