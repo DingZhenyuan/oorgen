@@ -196,4 +196,104 @@ enum UB {
     MaxUB
 };
 
+// 所有基本类型的共同父类.
+class BuiltinType : public Type {
+    public:
+        // 将Type和Value连接在一起（和Type保持一直）
+        class ScalarTypedVal {
+            public:
+                // 值（各种类型）
+                union Val {
+                    bool bool_val;
+                    signed char char_val;
+                    unsigned char uchar_val;
+                    short shrt_val;
+                    unsigned short ushrt_val;
+                    int int_val;
+                    unsigned int uint_val;
+                    int lint32_val; // for 32-bit mode
+                    unsigned int ulint32_val; // for 32-bit mode
+                    long long int lint64_val; // for 64-bit mode
+                    unsigned long long int ulint64_val; // for 64-bit mode
+                    long long int llint_val;
+                    unsigned long long int ullint_val;
+                };
+
+                // ScalarTypedVal构造函数
+                ScalarTypedVal (BuiltinType::IntegerTypeID _int_type_id) : int_type_id(_int_type_id), res_of_ub(NoUB) { val.ullint_val = 0; }
+                ScalarTypedVal (BuiltinType::IntegerTypeID _int_type_id, UB _res_of_ub) : int_type_id (_int_type_id), res_of_ub(_res_of_ub)  { val.ullint_val = 0; }
+                Type::IntegerTypeID get_int_type_id () const { return int_type_id; }
+
+                // Utility functions for UB
+                UB get_ub () { return res_of_ub; }
+                void set_ub (UB _ub) { res_of_ub = _ub; }
+                bool has_ub () { return res_of_ub != NoUB; }
+
+                // Interface to value through uint64_t
+                //TODO: it is a stub for shift rebuild. Can we do it better?
+                uint64_t get_abs_val ();
+                void set_abs_val (uint64_t new_val);
+
+                // Functions which implements UB detection and semantics of all operators
+                ScalarTypedVal cast_type (Type::IntegerTypeID to_type_id);
+                ScalarTypedVal operator++ (int) { return pre_op(true ); } // Postfix, but used also as prefix
+                ScalarTypedVal operator-- (int) { return pre_op(false); }// Postfix, but used also as prefix
+                ScalarTypedVal operator- ();
+                ScalarTypedVal operator~ ();
+                ScalarTypedVal operator! ();
+
+                ScalarTypedVal operator+ (ScalarTypedVal rhs);
+                ScalarTypedVal operator- (ScalarTypedVal rhs);
+                ScalarTypedVal operator* (ScalarTypedVal rhs);
+                ScalarTypedVal operator/ (ScalarTypedVal rhs);
+                ScalarTypedVal operator% (ScalarTypedVal rhs);
+                ScalarTypedVal operator< (ScalarTypedVal rhs);
+                ScalarTypedVal operator> (ScalarTypedVal rhs);
+                ScalarTypedVal operator<= (ScalarTypedVal rhs);
+                ScalarTypedVal operator>= (ScalarTypedVal rhs);
+                ScalarTypedVal operator== (ScalarTypedVal rhs);
+                ScalarTypedVal operator!= (ScalarTypedVal rhs);
+                ScalarTypedVal operator&& (ScalarTypedVal rhs);
+                ScalarTypedVal operator|| (ScalarTypedVal rhs);
+                ScalarTypedVal operator& (ScalarTypedVal rhs);
+                ScalarTypedVal operator| (ScalarTypedVal rhs);
+                ScalarTypedVal operator^ (ScalarTypedVal rhs);
+                ScalarTypedVal operator<< (ScalarTypedVal rhs);
+                ScalarTypedVal operator>> (ScalarTypedVal rhs);
+
+                // 随机生成 ScalarTypedVal
+                static ScalarTypedVal generate (std::shared_ptr<Context> ctx, BuiltinType::IntegerTypeID _int_type_id);
+                static ScalarTypedVal generate (std::shared_ptr<Context> ctx, ScalarTypedVal min, ScalarTypedVal max);
+
+                // 自身的值
+                Val val;
+
+            private:
+                // Common fuction for all pre-increment and post-increment operators
+                ScalarTypedVal pre_op (bool inc);
+
+                BuiltinType::IntegerTypeID int_type_id;
+                // If we can use the value or it was obtained from operation with UB
+                UB res_of_ub;
+        };
+
+        BuiltinType (BuiltinTypeID _builtin_id) : Type (Type::BUILTIN_TYPE), bit_size (0), suffix(""), builtin_id (_builtin_id) {}
+        BuiltinType (BuiltinTypeID _builtin_id, CV_Qual _cv_qual, bool _is_static, uint32_t _align) :
+                    Type (Type::BUILTIN_TYPE, _cv_qual, _is_static, _align), bit_size (0), suffix(""), builtin_id (_builtin_id) {}
+        bool is_builtin_type() { return true; }
+
+        // Getters for BuiltinType properties
+        BuiltinTypeID get_builtin_type_id() { return builtin_id; }
+        uint32_t get_bit_size () { return bit_size; }
+        std::string get_int_literal_suffix() { return suffix; }
+
+    protected:
+        unsigned int bit_size;
+        // Suffix for integer literals
+        std::string suffix;
+
+    private:
+        BuiltinTypeID builtin_id;
+};
+
 }
