@@ -335,6 +335,28 @@ class IntegerType : public BuiltinType {
         IntegerTypeID int_type_id;
 };
 
+// Class which represents bit-field
+class BitField : public IntegerType {
+    public:
+        BitField (IntegerTypeID it_id, uint32_t _bit_size) : IntegerType(it_id) { init_type(it_id, _bit_size); }
+        BitField (IntegerTypeID it_id, uint32_t _bit_size, CV_Qual _cv_qual) : IntegerType(it_id, _cv_qual, false, 0) { init_type(it_id, _bit_size); }
 
+        // Getters of BitField properties
+        bool get_is_bit_field() { return true; }
+        uint32_t get_bit_field_width() { return bit_field_width; }
+
+        // If all values of the bit-field can fit in signed/unsigned int
+        static bool can_fit_in_int (BuiltinType::ScalarTypedVal val, bool is_unsigned);
+
+        // Randomly generate BitField
+        static std::shared_ptr<BitField> generate (std::shared_ptr<Context> ctx, bool is_unnamed = false);
+
+        void dbg_dump ();
+
+    private:
+        // Common initializer functions, used in constructors
+        void init_type(IntegerTypeID it_id, uint32_t _bit_size);
+        uint32_t bit_field_width;
+};
 
 }

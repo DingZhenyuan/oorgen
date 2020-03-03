@@ -1750,3 +1750,99 @@ BuiltinType::IntegerTypeID IntegerType::get_corr_unsig (BuiltinType::IntegerType
             return MAX_INT_ID;
     }
 }
+
+void BitField::init_type (IntegerTypeID it_id, uint32_t _bit_size) {
+    std::shared_ptr<IntegerType> base_type = IntegerType::init(it_id);
+    name = base_type->get_simple_name();
+    suffix = base_type->get_int_literal_suffix();
+    is_signed = base_type->get_is_signed();
+    bit_size = _bit_size;
+    bit_field_width = _bit_size;
+    min = base_type->get_min();
+    max = base_type->get_max();
+    if (bit_size >= base_type->get_bit_size()) {
+        bit_size = base_type->get_bit_size();
+        return;
+    }
+
+    uint64_t act_max = 0;
+    if (is_signed)
+        act_max = pow(2, bit_size - 1) - 1;
+    else
+        act_max = pow(2, bit_size) - 1;
+    int64_t act_min = -((int64_t) act_max) - 1;
+
+    switch (it_id) {
+        case BuiltinType::IntegerTypeID::BOOL:
+            min.val.bool_val = false;
+            max.val.bool_val = true;
+            break;
+        case BuiltinType::IntegerTypeID::CHAR:
+            min.val.char_val = act_min;
+            max.val.char_val = (int64_t) act_max;
+            break;
+        case BuiltinType::IntegerTypeID::UCHAR:
+            min.val.uchar_val = 0;
+            max.val.uchar_val = act_max;
+            break;
+        case BuiltinType::IntegerTypeID::SHRT:
+            min.val.shrt_val = act_min;
+            max.val.shrt_val = (int64_t) act_max;
+            break;
+        case BuiltinType::IntegerTypeID::USHRT:
+            min.val.ushrt_val = 0;
+            max.val.ushrt_val = act_max;
+            break;
+        case BuiltinType::IntegerTypeID::INT:
+            min.val.int_val = act_min;
+            max.val.int_val = (int64_t) act_max;
+            break;
+        case BuiltinType::IntegerTypeID::UINT:
+            min.val.uint_val = 0;
+            max.val.uint_val = act_max;
+            break;
+        case BuiltinType::IntegerTypeID::LINT:
+            if (options->mode_64bit) {
+                min.val.lint64_val = act_min;
+                max.val.lint64_val = (int64_t) act_max;
+            }
+            else {
+                min.val.lint32_val = act_min;
+                max.val.lint32_val = (int64_t) act_max;
+            }
+            break;
+        case BuiltinType::IntegerTypeID::ULINT:
+            if (options->mode_64bit) {
+                min.val.ulint64_val = 0;
+                max.val.ulint64_val = act_max;
+            }
+            else {
+                min.val.ulint32_val = 0;
+                max.val.ulint32_val = act_max;
+            }
+            break;
+         case BuiltinType::IntegerTypeID::LLINT:
+            min.val.llint_val = act_min;
+            max.val.llint_val = (int64_t) act_max;
+            break;
+         case BuiltinType::IntegerTypeID::ULLINT:
+            min.val.ullint_val = 0;
+            max.val.ullint_val = act_max;
+            break;
+        case MAX_INT_ID:
+            ERROR("unsupported int type (BitField)");
+            break;
+    }
+}
+
+template <class T>
+static std::string dbg_dump_helper (std::string name, int id, T min, T max, uint32_t bit_size, bool is_signed) {
+    std::string ret = "";
+    ret += "name: " + name + "\n";
+    ret += "int_type_id: " + std::to_string(id) + "\n";
+    ret += "min: " + std::to_string((T)min) + "\n";
+    ret += "max: " + std::to_string((T)max) + "\n";
+    ret += "bit_size: " + std::to_string(bit_size) + "\n";
+    ret += "is_signed: " + std::to_string(is_signed) + "\n";
+    return ret;
+}
