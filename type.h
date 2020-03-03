@@ -573,6 +573,39 @@ class TypeULLINT : public IntegerType {
         }
 };
 
+// ArrayType represents arrays of all kinds.
+//TODO: 1) maybe we should split it to several classes?
+//      2) nowadays it can represent only one-dimensional array
+class ArrayType : public Type {
+    public:
+        enum ElementSubscript {
+            Brackets, At, MaxElementSubscript
+        };
 
+        enum Kind {
+            C_ARR,
+            VAL_ARR,
+            STD_ARR,
+            STD_VEC,
+            MAX_KIND
+        };
+
+        ArrayType(std::shared_ptr<Type> _base_type, uint32_t _size, Kind _kind);
+
+        bool is_array_type () { return true; }
+        std::shared_ptr<Type> get_base_type () { return base_type; }
+        uint32_t get_size () { return size; }
+        Kind get_kind () { return kind; }
+
+        std::string get_type_suffix();
+        void dbg_dump();
+
+        static std::shared_ptr<ArrayType> generate(std::shared_ptr<Context> ctx);
+
+    private:
+        std::shared_ptr<Type> base_type;
+        uint32_t size;
+        Kind kind;
+};
 
 }
