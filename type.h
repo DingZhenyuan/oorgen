@@ -296,4 +296,45 @@ class BuiltinType : public Type {
         BuiltinTypeID builtin_id;
 };
 
+std::ostream& operator<< (std::ostream &out, const BuiltinType::ScalarTypedVal &scalar_typed_val);
+
+// Class which serves as common ancestor for all standard integer types, bool and bit-fields
+class IntegerType : public BuiltinType {
+    public:
+        IntegerType (IntegerTypeID it_id) : BuiltinType (BuiltinTypeID::Integer), is_signed (false), min(it_id), max(it_id), int_type_id (it_id) {}
+        IntegerType (IntegerTypeID it_id, CV_Qual _cv_qual, bool _is_static, uint32_t _align) :
+                     BuiltinType (BuiltinTypeID::Integer, _cv_qual, _is_static, _align),
+                     is_signed (false), min(it_id), max(it_id), int_type_id (it_id) {}
+        bool is_int_type() { return true; }
+
+        // Getters for IntegerType properties
+        IntegerTypeID get_int_type_id () { return int_type_id; }
+        bool get_is_signed () { return is_signed; }
+        BuiltinType::ScalarTypedVal get_min () { return min; }
+        BuiltinType::ScalarTypedVal get_max () { return max; }
+
+        // This utility functions take IntegerTypeID and return shared pointer to corresponding type
+        static std::shared_ptr<IntegerType> init (BuiltinType::IntegerTypeID _type_id);
+        static std::shared_ptr<IntegerType> init (BuiltinType::IntegerTypeID _type_id, CV_Qual _cv_qual, bool _is_static, uint32_t _align);
+
+        // If type A can represent all the values of type B
+        static bool can_repr_value (BuiltinType::IntegerTypeID A, BuiltinType::IntegerTypeID B); // if type B can represent all of the values of the type A
+        // Returns corresponding unsigned type
+        static BuiltinType::IntegerTypeID get_corr_unsig (BuiltinType::IntegerTypeID _type_id);
+
+        // Randomly generate IntegerType (except bit-fields)
+        static std::shared_ptr<IntegerType> generate (std::shared_ptr<Context> ctx);
+
+    protected:
+        bool is_signed;
+        // Minimum and maximum value, which can fit in type
+        BuiltinType::ScalarTypedVal min;
+        BuiltinType::ScalarTypedVal max;
+
+    private:
+        IntegerTypeID int_type_id;
+};
+
+
+
 }

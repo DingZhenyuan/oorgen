@@ -1550,3 +1550,203 @@ BuiltinType::ScalarTypedVal BuiltinType::ScalarTypedVal::generate (std::shared_p
     return ret;
 }
 
+std::ostream& oorgen::operator<< (std::ostream &out, const BuiltinType::ScalarTypedVal &scalar_typed_val) {
+    switch(scalar_typed_val.get_int_type_id()) {
+        case BuiltinType::BOOL:
+            out << scalar_typed_val.val.bool_val;
+            break;
+        case BuiltinType::CHAR:
+            out << scalar_typed_val.val.char_val;
+            break;
+        case BuiltinType::UCHAR:
+            out << scalar_typed_val.val.uchar_val;
+            break;
+        case BuiltinType::SHRT:
+            out << scalar_typed_val.val.shrt_val;
+            break;
+        case BuiltinType::USHRT:
+            out << scalar_typed_val.val.ushrt_val;
+            break;
+        case BuiltinType::INT:
+            out << scalar_typed_val.val.int_val;
+            break;
+        case BuiltinType::UINT:
+            out << scalar_typed_val.val.uint_val;
+            break;
+        case BuiltinType::LINT:
+            if (options->mode_64bit)
+                out << scalar_typed_val.val.lint64_val;
+            else
+                out << scalar_typed_val.val.lint32_val;
+            break;
+        case BuiltinType::ULINT:
+            if (options->mode_64bit)
+                out << scalar_typed_val.val.ulint64_val;
+            else
+                out << scalar_typed_val.val.ulint32_val;
+            break;
+        case BuiltinType::LLINT:
+            out << scalar_typed_val.val.llint_val;
+            break;
+        case BuiltinType::ULLINT:
+            out << scalar_typed_val.val.ullint_val;
+            break;
+        case BuiltinType::MAX_INT_ID:
+            ERROR("unsupported type of struct member");
+            break;
+    }
+    return out;
+}
+
+std::shared_ptr<IntegerType> IntegerType::init (BuiltinType::IntegerTypeID _type_id) {
+    std::shared_ptr<IntegerType> ret (nullptr);
+    switch (_type_id) {
+        case BuiltinType::IntegerTypeID::BOOL:
+            ret = std::make_shared<TypeBOOL> (TypeBOOL());
+            break;
+        case BuiltinType::IntegerTypeID::CHAR:
+            ret = std::make_shared<TypeCHAR> (TypeCHAR());
+            break;
+        case BuiltinType::IntegerTypeID::UCHAR:
+            ret = std::make_shared<TypeUCHAR> (TypeUCHAR());
+            break;
+        case BuiltinType::IntegerTypeID::SHRT:
+            ret = std::make_shared<TypeSHRT> (TypeSHRT());
+            break;
+        case BuiltinType::IntegerTypeID::USHRT:
+            ret = std::make_shared<TypeUSHRT> (TypeUSHRT());
+            break;
+        case BuiltinType::IntegerTypeID::INT:
+            ret = std::make_shared<TypeINT> (TypeINT());
+            break;
+        case BuiltinType::IntegerTypeID::UINT:
+            ret = std::make_shared<TypeUINT> (TypeUINT());
+            break;
+        case BuiltinType::IntegerTypeID::LINT:
+            ret = std::make_shared<TypeLINT> (TypeLINT());
+            break;
+        case BuiltinType::IntegerTypeID::ULINT:
+            ret = std::make_shared<TypeULINT> (TypeULINT());
+            break;
+         case BuiltinType::IntegerTypeID::LLINT:
+            ret = std::make_shared<TypeLLINT> (TypeLLINT());
+            break;
+         case BuiltinType::IntegerTypeID::ULLINT:
+            ret = std::make_shared<TypeULLINT> (TypeULLINT());
+            break;
+        case MAX_INT_ID:
+            break;
+    }
+    return ret;
+}
+
+std::shared_ptr<IntegerType> IntegerType::init (BuiltinType::IntegerTypeID _type_id, Type::CV_Qual _cv_qual, bool _is_static, uint32_t _align) {
+    std::shared_ptr<IntegerType> ret = IntegerType::init (_type_id);
+    ret->set_cv_qual(_cv_qual);
+    ret->set_is_static(_is_static);
+    ret->set_align(_align);
+    return ret;
+}
+
+std::shared_ptr<IntegerType> IntegerType::generate (std::shared_ptr<Context> ctx) {
+    Type::CV_Qual cv_qual = rand_val_gen->get_rand_elem(ctx->get_gen_policy()->get_allowed_cv_qual());
+
+    bool specifier = false;
+    if (ctx->get_gen_policy()->get_allow_static_var())
+        specifier = rand_val_gen->get_rand_value(false, true);
+    //TODO: what about align?
+
+    IntegerType::IntegerTypeID int_type_id = rand_val_gen->get_rand_id(ctx->get_gen_policy()->get_allowed_int_types());
+    return IntegerType::init(int_type_id, cv_qual, specifier, 0);
+}
+
+
+bool IntegerType::can_repr_value (BuiltinType::IntegerTypeID a, BuiltinType::IntegerTypeID b) {
+    // This function is used for different conversion rules, so it can be called only after integral promotion
+    std::shared_ptr<IntegerType> B = std::static_pointer_cast<IntegerType>(init(b));
+    switch (a) {
+        case INT:
+            return B->get_is_signed();
+        case UINT:
+            if (B->get_int_type_id() == INT)
+                return false;
+            if (B->get_int_type_id() == LINT)
+                return options->mode_64bit;
+            return true;
+        case LINT:
+            if (!B->get_is_signed())
+                return false;
+            if (B->get_int_type_id() == INT)
+                return !options->mode_64bit;
+            return true;
+        case ULINT:
+            switch (B->get_int_type_id()) {
+                case INT:
+                    return false;
+                case UINT:
+                    return !options->mode_64bit;
+                case LINT:
+                    return false;
+                case ULINT:
+                    return true;
+                case LLINT:
+                    return !options->mode_64bit;
+                case ULLINT:
+                    return true;
+                default:
+                    ERROR("ULINT");
+            }
+        case LLINT:
+            switch (B->get_int_type_id()) {
+                case INT:
+                case UINT:
+                    return false;
+                case LINT:
+                    return options->mode_64bit;
+                case ULINT:
+                    return false;
+                case LLINT:
+                    return true;
+                case ULLINT:
+                    return false;
+                default:
+                    ERROR("LLINT");
+            }
+        case ULLINT:
+            switch (B->get_int_type_id()) {
+                case INT:
+                case UINT:
+                case LINT:
+                   return false;
+                case ULINT:
+                   return options->mode_64bit;
+                case LLINT:
+                   return false;
+                case ULLINT:
+                    return true;
+                default:
+                    ERROR("ULLINT");
+            }
+        default:
+            ERROR("Some types are not covered (IntegerType)");
+            return false;
+    }
+}
+
+BuiltinType::IntegerTypeID IntegerType::get_corr_unsig (BuiltinType::IntegerTypeID _type_id) {
+    // This function is used for different conversion rules, so it can be called only after integral promotion
+    switch (_type_id) {
+        case INT:
+        case UINT:
+            return UINT;
+        case LINT:
+        case ULINT:
+            return ULINT;
+        case LLINT:
+        case ULLINT:
+            return ULLINT;
+        default:
+            ERROR("Some types are not covered (IntegerType)");
+            return MAX_INT_ID;
+    }
+}
