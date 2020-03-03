@@ -608,4 +608,26 @@ class ArrayType : public Type {
         Kind kind;
 };
 
+// Class which represents pointers
+class PointerType : public Type {
+    public:
+        PointerType (std::shared_ptr<Type> base_type) :
+                Type(TypeID::POINTER_TYPE), pointee_type(base_type), depth(1) { init(); }
+        PointerType (std::shared_ptr<Type> base_type, CV_Qual _cv_qual, bool _is_static, uint32_t _align) :
+                Type(TypeID::POINTER_TYPE, _cv_qual, _is_static, _align), pointee_type(base_type), depth(1) { init(); }
+        bool is_ptr_type() { return true; }
+        std::shared_ptr<Type> get_pointee_type() { return pointee_type; }
+        uint32_t get_depth() { return depth; }
+        void dbg_dump();
+
+    private:
+        void init();
+
+        std::shared_ptr<Type> pointee_type;
+        uint32_t depth;
+};
+
+// This function checks if we can assign one pointer type to another
+bool is_pointers_compatible (std::shared_ptr<PointerType> type_a, std::shared_ptr<PointerType> type_b);
+
 }
