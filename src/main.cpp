@@ -36,6 +36,7 @@ bool option_starts_with (char* option, const char* test) {
 }
 
 // This function prints out optional error_message, help and exits
+// 此函数用来打印输出可选的错误信息、帮助信息和退出信息
 void print_usage_and_exit (std::string error_msg = "") {
     int exit_code = 0;
     if (error_msg != "") {
