@@ -12,6 +12,7 @@ Program::Program (std::string _out_folder) {
     functions.reserve(gen_policy.get_test_func_count());
 }
 
+// It initializes global Context and launches generation process.
 void Program::generate () {
     NameHandler& name_handler = NameHandler::get_instance();
     for (unsigned int i = 0; i < gen_policy.get_test_func_count(); ++i) {
@@ -37,6 +38,8 @@ void Program::generate () {
 
 // Utility function which generates pointers (including nested)
 // only_invariants allows to exclude pointers to non-const members
+// 生成指针（包括嵌套）的 Utility finction
+// only_invariants 允许排除指向非 const 成员的指针
 inline void ptr_generation (const std::shared_ptr<SymbolTable> &sym_table, uint32_t min_count,
                             uint32_t max_count, bool only_invariants) {
     NameHandler& name_handler = NameHandler::get_instance();
@@ -88,6 +91,7 @@ inline void ptr_generation (const std::shared_ptr<SymbolTable> &sym_table, uint3
 }
 
 // This function initially fills extern symbol table with inp and mix variables. It also creates type structs definitions.
+// 此函数最初使用输入和混合变量填充 extern 符号表。创建包括基本变量、结构体、array和指针
 void Program::form_extern_sym_table(std::shared_ptr<Context> ctx) {
     auto p = ctx->get_gen_policy();
     // Allow const cv-qualifier in gen_policy, pass it to new Context
@@ -219,9 +223,12 @@ static std::string get_file_ext () {
     ERROR("can't detect language subset");
 }
 
+// 输出声明
 void Program::emit_decl () {
     std::ofstream out_file;
+    // 打开文件
     out_file.open(out_folder + "/" + "init.h");
+    // 输出头文件
     if (options->include_valarray)
         out_file << "#include <valarray>\n\n";
     if (options->include_vector)
@@ -229,6 +236,7 @@ void Program::emit_decl () {
     if (options->include_array)
         out_file << "#include <array>\n\n";
 
+    // 输出初始化后的变量
     for (unsigned int i = 0; i < gen_policy.get_test_func_count(); ++i) {
         extern_inp_sym_table.at(i)->emit_variable_extern_decl(out_file);
         out_file << "\n\n";
@@ -262,6 +270,7 @@ void Program::emit_decl () {
     out_file.close();
 }
 
+// 输出函数
 void Program::emit_func () {
     std::ofstream out_file;
     out_file.open(out_folder + "/" + "func." + get_file_ext());
@@ -275,6 +284,7 @@ void Program::emit_func () {
     out_file.close();
 }
 
+// 输出main函数
 void Program::emit_main () {
     std::ofstream out_file;
     out_file.open(out_folder + "/" + "driver." + get_file_ext());

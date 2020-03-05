@@ -17,6 +17,12 @@ namespace oorgen {
 //
 // Generation process starts with initialization of global Context and extern SymTable.
 // After it, recursive Scope generation method starts
+// 此类充当生成过程的驱动程序。
+// 首先，应使用种子初始化全局变量rand_val_gen（请参见RandValGen）。
+// 之后，您可以调用generate方法（它将完成所有工作）。 
+// 要打印出结果，只需连续调用所有的send方法。
+// 生成过程始于全局Context和外部SymTable的初始化。
+// 之后，递归作用域生成方法开始
 class Program {
     public:
         Program (std::string _out_folder);
