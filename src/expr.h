@@ -11,11 +11,13 @@ namespace oorgen {
 class Context;
 class GenPolicy;
 
-// Abstract class, serves as a common ancestor for all expressions.
+//抽象类，用来作为所有表达式的父类
 class Expr : public Node {
     public:
+        // Expr构造函数
         Expr (Node::NodeID _id, std::shared_ptr<Data> _value, uint32_t _compl) :
               Node(_id), value(_value), complexity(_compl) {}
+        // Getters and Setters
         Type::TypeID get_type_id () { return value->get_type()->get_type_id (); }
         virtual std::shared_ptr<Data> get_value ();
         uint32_t get_complexity() { return complexity; }
@@ -24,33 +26,30 @@ class Expr : public Node {
         static void zero_out_func_expr_count () { func_expr_count = 0; }
 
     protected:
-        // This function does type conversions required by the language standard (implicit cast,
-        // integral promotion or usual arithmetic conversions) to existing child nodes.
-        // As a result, it inserts required TypeCastExpr between existing child nodes and
-        // current node.
+        // 此函数会将语言标准要求的类型转换（隐式强制转换，Integral提升或常规算术转换）执行到现有子节点。
+        // 结果，它在现存子节点和当前节点之间插入所需的TypeCastExpr。
         virtual bool propagate_type () = 0;
 
-        // This function calculates value of current node, based on its child nodes.
-        // Also it detects UB and eliminates it (for more information, see rebuild() method
-        // in inherited classes). It requires propagate_type() to be called first.
+        // 此函数基于当前节点的子节点们，计算当前节点的值
+        // 也探测UB并且消除它，需要首先调用propagate_type()
         virtual UB propagate_value () = 0;
         std::shared_ptr<Data> value;
         uint32_t complexity;
 
-        // Count of expression over all test program
+        // 通过所有的测试程序计算表达式
         static uint32_t total_expr_count;
-        // Count of expression per single test function
+        // 给每个单独的测试函数计算表达式
         static uint32_t func_expr_count;
 };
 
-// Variable Use expression provides access to variable.
-// Any interaction with a variable (access to its value) in generated test is represented
-// by this class. For example, assignment to the variable may use VarUseExpr as lhs.
+// Variable Use Expression 提供对变量的访问。
+// 此类在生成的测试中与变量进行任何交互（访问其值）均由此类表示。
+// 例如，分配给变量可以将VarUseExpr用作lhs
 class VarUseExpr : public Expr {
     public:
         VarUseExpr (std::shared_ptr<Data> _var);
         std::shared_ptr<Expr> set_value (std::shared_ptr<Expr> _expr);
-        // This method provides direct access to underlying variable
+        // 此方法可以直接访问基本变量
         std::shared_ptr<Data> get_raw_value () { return value; }
         void emit (std::ostream& stream, std::string offset = "") { stream << value->get_name (); }
 
@@ -59,10 +58,9 @@ class VarUseExpr : public Expr {
         UB propagate_value () { return NoUB; }
 };
 
-// Assignment expression represents assignment of one expression to another.
-// Its constructor replaces implicit cast (cast rhs to the type of lhs) with TypeCastExpr node and
-// updates value of lhs (only if this assignment is evaluated in the test, i.e. "taken" is true).
-// E.g.: lhs_expr = rhs_expr
+// Assignment Expresseion 表示将一个表达式分配给另一个表达式。
+// 它的构造函数用TypeCastExpr节点替换隐式强制转换（将rhs转换为lhs的类型）并更新左侧的值（仅当在测试中评估了此分配，即“ taken”为true时）。
+// 例如：左侧的表达式 = 右侧的表达式
 class AssignExpr : public Expr {
     public:
         AssignExpr (std::shared_ptr<Expr> _to, std::shared_ptr<Expr> _from, bool _taken = true);
@@ -72,18 +70,18 @@ class AssignExpr : public Expr {
         bool propagate_type ();
         UB propagate_value ();
 
-        // Destination (can be only VarUseExpr or MemberExpr).
+        // 目的 (只能是VarUseExpr or MemberExpr).
         std::shared_ptr<Expr> to;
-        // Rhs part of assignment expression.
+        // 赋值表达式的右侧
         std::shared_ptr<Expr> from;
-        // Taken indicates whether expression is evaluated and lhs value should be updated.
+        // Taken 表示是否评估表达式以及是否应该更改表达式左侧的值
         bool taken;
 };
 
-// Type Cast expression represents implicit and explicit type casts.
-// The creator of TypeCastExpr should make the decision about its kind (implicit or explicit)
-// and pass it to constructor. All of implicit casts should be represented by this class.
-// E.g.: (to_type) expr;
+// Type Cast expression 表示隐式和显式类型转换。
+// TypeCastExpr的创建者应做出有关其类型（隐式或显式）的决定，并将其传递给构造函数。
+// 所有隐式强制类型转换都应由此类表示。
+// 例如：（to_type）expr;
 class TypeCastExpr : public Expr {
     public:
         TypeCastExpr (std::shared_ptr<Expr> _expr, std::shared_ptr<Type> _type, bool _is_implicit = false);
@@ -96,12 +94,12 @@ class TypeCastExpr : public Expr {
 
         std::shared_ptr<Expr> expr;
         std::shared_ptr<Type> to_type;
-        // This flag indicates if this conversion is implicit or not.
-        // I.e. if it's implicit and omitted - the program behavior won't change.
+        // 这个flag表示转换是否时隐式
+        // 即如果它时隐式的和省略的，则程序行为不会改变
         bool is_implicit;
 };
 
-// Constant expression represents constant values
+// Constant expression 代表常数值
 // E.g.: 123ULL
 // TODO: should we play around with different representation of constants? I.e. decimal,
 // hex, octal, with and without C++14 style apostrophes, etc.
@@ -111,9 +109,9 @@ class ConstExpr : public Expr {
         void emit (std::ostream& stream, std::string offset = "");
         static std::shared_ptr<ConstExpr> generate (std::shared_ptr<Context> ctx);
 
-        // This function fills internal buffers (unique for each type of context) of used constants and
-        // should be called before each new generation of Stmt.
-        // These buffers are used later during ConstExpr::generate.
+        // 此函数将填充所用常量的内部缓冲区（对于每种context类型都是唯一的），
+        // 并且应在每个Stmt新生成之前调用。
+        // 这些缓冲区稍后在ConstExpr :: generate中使用。
         static void fill_const_buf(std::shared_ptr<Context> ctx);
 
     private:
@@ -128,13 +126,12 @@ class ConstExpr : public Expr {
         UB propagate_value () { return NoUB; }
 };
 
-// Arithmetic expression abstract class, serves as common ancestor for unary/binary expressions.
-// We construct expression tree, using top-down approach.
-// After that in bottom-up direction we propagate types and values (if we detect UB, we eliminate it).
+// Arithmetic expression 抽象类, 用作一元/二元表达式的公共父类。
+// 我们使用自上而下的方法构造表达式树。 
+// 之后，我们将自下而上地传播类型和值（如果检测到UB，则将其消除）。
 class ArithExpr : public Expr {
     public:
-        // Complexity for ArithExpr should be set manually after all transformations,
-        // rather than passed to Expr constructor
+        // ArithExpr的复杂度应在所有转换后手动设置，而不是传递给Expr构造函数
         ArithExpr(Node::NodeID _node_id, std::shared_ptr<Data> _val) : Expr(_node_id, _val, 0) {}
         static std::shared_ptr<Expr> generate (std::shared_ptr<Context> ctx, std::vector<std::shared_ptr<Expr>> inp);
 
@@ -154,10 +151,11 @@ class ArithExpr : public Expr {
         // Total number of all generated arithmetic expressions
 };
 
-// Unary expression represents all unary operators
+// Unary expression 表示所有的一元操作
 // E.g.: +lhs_expr;
 class UnaryExpr : public ArithExpr {
     public:
+        // 一元操作
         enum Op {
             PreInc,  ///< Pre-increment //no
             PreDec,  ///< Pre-decrement //no
@@ -184,10 +182,11 @@ class UnaryExpr : public ArithExpr {
         std::shared_ptr<Expr> arg;
 };
 
-// Binary expression - represents all binary operators
+// Binary expression - 表示所有的二元操作
 // E.g.: lhs_expr + rhs_expr;
 class BinaryExpr : public ArithExpr {
     public:
+        // 二元操作
         enum Op {
             Add   , ///< Addition
             Sub   , ///< Subtraction
@@ -232,7 +231,7 @@ class BinaryExpr : public ArithExpr {
         std::shared_ptr<Expr> arg1;
 };
 
-// ConditionalExpr - ternary conditional operator
+// ConditionalExpr - 三元条件运算
 class ConditionalExpr : public BinaryExpr {
     public:
         ConditionalExpr (std::shared_ptr<Expr> _cond, std::shared_ptr<Expr> lhs, std::shared_ptr<Expr> rhs);
@@ -244,14 +243,14 @@ class ConditionalExpr : public BinaryExpr {
         std::shared_ptr<Expr> condition;
 };
 
-// Member expression - provides access to members of struct variable
+// Member expression - 提供对struct变量成员的访问
 // E.g.: struct_obj.member_1
 class MemberExpr : public Expr {
     public:
         MemberExpr (std::shared_ptr<Struct> _struct, uint64_t _identifier);
         MemberExpr (std::shared_ptr<MemberExpr> _member_expr, uint64_t _identifier);
         std::shared_ptr<Expr> set_value (std::shared_ptr<Expr> _expr);
-        // This method provides direct access to underlying member
+        // 此方法提供对基础成员的直接访问
         std::shared_ptr<Data> get_raw_value () { return value; }
         void emit (std::ostream& stream, std::string offset = "");
 
@@ -265,7 +264,7 @@ class MemberExpr : public Expr {
         uint64_t identifier;
 };
 
-// AddressOf expression - represents taking the address of any object
+// AddressOf expression - 表示获取任何对象的地址
 class AddressOfExpr : public Expr {
     public:
         AddressOfExpr(std::shared_ptr<Expr> expr);
@@ -278,7 +277,7 @@ class AddressOfExpr : public Expr {
         std::shared_ptr<Expr> addr_of_expr;
 };
 
-// ExprStar - represents dereference of a pointer
+// ExprStar - 表示对指针的取消引用
 class ExprStar : public Expr {
     public:
         ExprStar(std::shared_ptr<Expr> expr);
@@ -293,7 +292,7 @@ class ExprStar : public Expr {
         std::shared_ptr<Expr> expr_star;
 };
 
-// Stub expression - serves as helper function for unimplemented features
+// Stub expression - 用作未实现功能的辅助功能
 class StubExpr : public Expr {
     public:
         StubExpr(std::string _str) : Expr(Node::NodeID::STUB, nullptr, 1), string(_str) {}
