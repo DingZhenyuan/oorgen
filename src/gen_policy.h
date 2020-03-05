@@ -14,10 +14,9 @@
 
 namespace oorgen {
 
-// This class links together id (for example, type of unary operator) and its probability.
-// Usually it is used in the form of std::vector<Probability<id>> and defines all possible variants
-// for random decision (probability itself measured in parts, similarly to std::discrete_distribution).
-// According to agreement, sum of all probabilities in vector should be 100 (so we can treat 1 part as 1 percent).
+// 此类将id（例如，一元运算符的类型）及其概率链接在一起。
+// 通常，它以std :: vector <Probability <id >>的形式使用，并定义用于随机决策的所有可能变体（概率本身按部分度量，类似于std :: discrete_distribution）。
+// 根据协议，向量中所有概率的总和应为100（因此我们可以将1个部分视为1％）。
 template<typename T>
 class Probability {
     public:
@@ -31,14 +30,14 @@ class Probability {
         uint64_t prob;
 };
 
-// According to agreement, Random Value Generator is the only way to get any random value in YARP Generator.
-// It is used for different random decisions all over the source code.
-// Also it tracks name numbering of all generated variables, struct and etc.
-// Moreover, it performs shuffling of initial parameters of default generation policy.
+// 根据协议，随机值生成器是在OOR生成器中获取任何随机值的唯一方法。
+// 它用于整个源代码中的不同随机决策。
+// 它还跟踪所有生成的变量，结构等的名称编号。
+// 此外，它还对默认生成策略的初始参数进行改组。
 class RandValGen {
     public:
-        // Specific seed can be passed to constructor to reproduce the test.
-        // Zero value is reserved (it notifies RandValGen that it can choose any)
+        //特定的种子可以传递给构造函数以重现测试。
+        //保留零值（则表明RandValGen可以选择任何值）
         RandValGen (uint64_t _seed);
 
         template<typename T>
@@ -70,9 +69,8 @@ class RandValGen {
             return vec.at(idx);
         }
 
-        // To improve variety of generated tests, we implement shuffling of
-        // input probabilities (they are stored in GenPolicy).
-        // TODO: sometimes this action increases test complexity, and tests becomes non-generatable.
+        // 为了改善生成的测试的多样性，我们实现了输入概率的改组（它们存储在GenPolicy中）。
+        // TODO：有时此操作会增加测试的复杂性，并且测试变得不可生成。
         template <typename T>
         void shuffle_prob(std::vector<Probability<T>> &prob_vec) {
             int total_prob = 0;
@@ -108,6 +106,7 @@ inline bool RandValGen::get_rand_value<bool> (bool from, bool to) {
 extern std::shared_ptr<RandValGen> rand_val_gen;
 
 // Singleton class which handles name's creation of all variables, structures, etc.
+// 处理所有变量、结构的name的创建
 class NameHandler {
     public:
         static const std::string common_test_func_prefix;
@@ -192,12 +191,10 @@ struct ConstPattern : public Pattern {
     };
 };
 ///////////////////////////////////////////////////////////////////////////////
-// GenPolicy stores actual distribution of all available parameters, used during
-// random decision process (distributions, applied patterns and etc).
-// This parameters are responsible for properties of output test.
-// At start all parameters are loaded from config, then some of them are shuffled.
-// GenPolicy could be modified during generation process in order to shape output test and gave it desired properties.
-// Every randomly generated entity requires its Context, and Context contains its unique GenPolicy object.
+// GenPolicy 存储了随机决策过程中使用的所有可用参数的实际分布（分布，应用的模式等）。此参数负责输出测试的属性。
+// 开始时，所有参数都是从config加载的，然后其中一些会被随机发出。
+// GenPolicy 可以在生成过程中进行修改，以调整输出测试的形状并赋予其所需的属性。
+// 每个随机生成的实体都需要其Context，并且Context包含其唯一的GenPolicy对象。
 class GenPolicy {
     public:
         // Utility enums. They are used as IDs in Probability<ID>
