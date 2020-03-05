@@ -264,7 +264,7 @@ class MemberExpr : public Expr {
         uint64_t identifier;
 };
 
-// AddressOf expression - 表示获取任何对象的地址
+// AddressOf expression - 表示获取地址
 class AddressOfExpr : public Expr {
     public:
         AddressOfExpr(std::shared_ptr<Expr> expr);

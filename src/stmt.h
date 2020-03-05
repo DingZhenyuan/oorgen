@@ -12,7 +12,7 @@ namespace oorgen {
 
 class Context;
 
-// Abstract class, serves as common ancestor for all statements.
+// 抽象类，作为所有statements的公共父类
 class Stmt : public Node {
     public:
         Stmt (Node::NodeID _id) : Node(_id) {};
@@ -27,10 +27,8 @@ class Stmt : public Node {
         static uint32_t func_stmt_count;
 };
 
-// Declaration statement creates new variable (declares variable in current context) and adds it to local symbol table:
-// E.g.: variable_declaration = init_statement;
-// Also it provides emission of extern declarations (this ability used only in print-out process):
-// E.g.: extern variable_declaration;
+// Declaration statement 会创建新变量（在当前context中声明变量）并将其添加到本地符号表中：例如：variable_declaration = init_statement;
+// 还提供了外部声明的发出（此功能仅在打印过程中使用）：例如：extern variable_declaration;
 class DeclStmt : public Stmt {
     public:
         DeclStmt (std::shared_ptr<Data> _data, std::shared_ptr<Expr> _init, bool _is_extern = false);
@@ -48,9 +46,8 @@ class DeclStmt : public Stmt {
         bool is_extern;
 };
 
-// Expression statement 'converts' any expression to statement.
-// For example, it allows to use AssignExpr as statement:
-// var_16 = 123ULL * 10;
+// Expression statement 将任何表达式“转换”为语句。
+// 例如，它允许使用AssignExpr作为语句：var_16 = 123ULL * 10;
 class ExprStmt : public Stmt {
     public:
         ExprStmt (std::shared_ptr<Expr> _expr) : Stmt(Node::NodeID::EXPR), expr(_expr) {}
@@ -65,7 +62,7 @@ class ExprStmt : public Stmt {
         std::shared_ptr<Expr> expr;
 };
 
-// Scope statement represents scope and its content:
+// Scope statement 表示作用于和内容:
 // E.g.:
 // {
 //     ...
@@ -88,7 +85,7 @@ class ScopeStmt : public Stmt {
         std::vector<std::shared_ptr<Stmt>> scope;
 };
 
-// If statement - represents if...else statement. Else branch is optional.
+// If statement - 表示if-else语句，else可选
 // E.g.:
 // if (cond) {
 // ...
