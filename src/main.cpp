@@ -101,6 +101,7 @@ bool parse_long_and_short_args (int argc, int &argv_iter, char** &argv, std::str
            parse_short_args(argc, argv_iter, argv, short_arg, action, error_msg);
 }
 
+// 程序入口
 int main (int argc, char* argv[128]) {
     options = new Options;
     uint64_t seed = 0;
@@ -109,11 +110,13 @@ int main (int argc, char* argv[128]) {
 
     // Utility functions. They are necessary for copy-paste reduction. They perform main actions during option parsing.
     // Detects output directory
+    // 实用程序功能。 它们对于减少复制粘贴是必需的。 它们在选项解析期间执行主要操作。
+    // 检测输出目录
     auto out_dir_action = [&out_dir] (std::string arg) {
         out_dir = arg;
     };
 
-    // Detects predefined seed
+    // 检测预定义的seed
     auto seed_action = [&seed] (std::string arg) {
         size_t *pEnd = nullptr;
         std::stringstream arg_ss(arg);
@@ -134,7 +137,7 @@ int main (int argc, char* argv[128]) {
         }
     };
 
-    // Detects oorgen bit_mode
+    // 检测 oorgen 的 bit_mode
     auto bit_mode_action = [] (std::string arg) {
         size_t *pEnd = nullptr;
         try {
@@ -151,7 +154,7 @@ int main (int argc, char* argv[128]) {
         }
     };
 
-    // Detects desired language standard
+    // 检测想要的语言标准
     auto standard_action = [] (std::string arg) {
         std::string search_str = arg;
         auto search_res = Options::str_to_standard.find(search_str);
@@ -162,7 +165,7 @@ int main (int argc, char* argv[128]) {
         }
     };
 
-    // Main loop for parsing command-line options
+    // 解析命令行选项的主循环
     for (int i = 0; i < argc; ++i) {
         if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
             print_usage_and_exit();
